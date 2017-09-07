@@ -6,12 +6,15 @@ import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-import torchvision.transforms as transforms
+# import torchvision.transforms as transforms
 from torch.autograd import Variable
 
-from datagen import ListDataset
+# from datagen import ListDataset
+import voc.transforms as transforms
+from encoder import DataEncoder
 from loss import FocalLoss
 from retinanet import RetinaNet, resnet50_features
+from voc.datasets import VocLikeDataset
 
 
 parser = argparse.ArgumentParser(description='PyTorch RetinaNet Training')
@@ -20,21 +23,24 @@ parser.add_argument('--resume', '-r', action='store_true', help='resume from che
 args = parser.parse_args()
 
 assert torch.cuda.is_available(), 'Error: CUDA not found!'
-best_loss = float('inf')  # best test loss
-start_epoch = 0  # start from epoch 0 or last epoch
+best_loss = float('inf')
+start_epoch = 0
 
-# Data
 print('==> Preparing data..')
 transform = transforms.Compose([
+    transforms.Rescale((1536, 864)),
+    transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
     transforms.Normalize((0.3659,0.3790,0.3179), (0.2910,0.2930,0.2577))
     # transforms.Normalize((0.485,0.456,0.406), (0.229,0.224,0.225))
 ])
 
-trainset = ListDataset(root='../../datasets/shelf/6/Images',
-                       list_file='../../datasets/shelf/train.txt', train=True, transform=transform, input_size=864, max_size=1536)
+# trainset = ListDataset(root='../../datasets/shelf/6/Images',
+#                        list_file='../../datasets/shelf/train.txt', train=True, transform=transform, input_size=864, max_size=1536)
 #trainset = ListDataset(root='/datasets/pascal-voc/VOCdevkit/VOC2007/JPEGImages',
 #                       list_file='voc_data/voc07_train.txt', train=True, transform=transform, input_size=600, max_size=1000)
+root = os.path.join('data', 'shelf-6')
+trainset = VocLikeDataset(os.path.join(root, 'Images'), '.png', os.path.join(root, 'Annotations'), encoder=DataEncoder(), transform=transform)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=6, shuffle=True, num_workers=8, collate_fn=trainset.collate_fn)
 
 #testset = ListDataset(root='../../datasets/shelf/6/Images',

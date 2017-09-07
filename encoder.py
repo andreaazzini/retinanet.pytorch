@@ -51,6 +51,7 @@ class DataEncoder:
         
         anchor_boxes = self.get_anchor_boxes(input_size)
         boxes = change_box_order(boxes, 'xyxy2xywh')
+        boxes = boxes.float()
         ious = box_iou(anchor_boxes, boxes, order='xywh')
         max_ious, max_ids = ious.max(1)
         boxes = boxes[max_ids]
