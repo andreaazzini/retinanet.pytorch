@@ -11,7 +11,7 @@ import torchvision.transforms as transforms
 from torch.autograd import Variable
 
 from encoder import DataEncoder
-from retinanet import RetinaNet
+from retinanet import RetinaNet, resnet50_features
 
 
 class Denormalize(object):
@@ -36,17 +36,18 @@ inverse_transform = transforms.Compose([
 
 
 data_encoder = DataEncoder()
-net = RetinaNet()
+net = RetinaNet(resnet50_features())
 checkpoint = torch.load('checkpoint/ckpt.pth')
 net.load_state_dict(checkpoint['net'])
 net.cuda()
 net.eval()
 
-# image_fn = 'demo/session5_left_35.png'
-# image_fn = 'demo/session4_right_23.png'
-# image_fn = 'demo/session1_right_26.png'
+image_fn_1 = 'session5_left_35.png'
+image_fn_2 = 'session4_right_23.png'
+image_fn_3 = 'session1_right_26.png'
 image_dir = os.path.join('/', 'home', 'azzarcher', 'datasets', 'shelf', '6', 'Images')
-for image_fn in tqdm(os.listdir(image_dir)):
+# for image_fn in tqdm(os.listdir(image_dir)):
+for image_fn in tqdm([image_fn_1, image_fn_2, image_fn_3]):
     frame = Image.open(os.path.join(image_dir, image_fn))
     frame.thumbnail((1536, 864), Image.ANTIALIAS)
     

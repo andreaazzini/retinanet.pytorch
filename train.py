@@ -1,27 +1,21 @@
-from __future__ import print_function
-
-import os
 import argparse
+import os
 
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
-
-import torchvision
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
 import torchvision.transforms as transforms
-
-from loss import FocalLoss
-# from models import RetinaNet, resnet50_features
-from retinanet import RetinaNet
-from datagen import ListDataset
-
 from torch.autograd import Variable
+
+from datagen import ListDataset
+from loss import FocalLoss
+from retinanet import RetinaNet, resnet50_features
 
 
 parser = argparse.ArgumentParser(description='PyTorch RetinaNet Training')
-parser.add_argument('--lr', default=0.001, type=float, help='learning rate')
+parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 args = parser.parse_args()
 
@@ -49,9 +43,7 @@ trainloader = torch.utils.data.DataLoader(trainset, batch_size=6, shuffle=True, 
 #                      list_file='voc_data/voc07_test.txt', train=False, transform=transform, input_size=600, max_size=1000)
 #testloader = torch.utils.data.DataLoader(testset, batch_size=2, shuffle=False, num_workers=8, collate_fn=testset.collate_fn)
 
-# Model
-# net = RetinaNet(resnet50_features(pretrained=True))
-net = RetinaNet()
+net = RetinaNet(resnet50_features(pretrained=True))
 if args.resume:
     print('==> Resuming from checkpoint..')
     checkpoint = torch.load('./checkpoint/ckpt.pth')
@@ -72,8 +64,6 @@ def train(epoch):
     net.train()
     train_loss = 0
     for batch_idx, (inputs, loc_targets, cls_targets) in enumerate(trainloader):
-        #print(inputs.size())
-        # print(cls_targets.size())
         inputs = Variable(inputs.cuda())
         loc_targets = Variable(loc_targets.cuda())
         cls_targets = Variable(cls_targets.cuda())
