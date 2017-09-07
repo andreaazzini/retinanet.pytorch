@@ -181,7 +181,7 @@ def resnet152_features(pretrained=False, **kwargs):
     return model
 
 
-class FeaturePyramid:
+class FeaturePyramid(nn.Module):
     def __init__(self, resnet):
         super(FeaturePyramid, self).__init__()
 
@@ -242,16 +242,8 @@ class RetinaNet(nn.Module):
         self.subnet_classes = SubNet(mode='classes')
 
     def forward(self, x):
-        pyramid_features = self.fpn.forward(x)
+        pyramid_features = self.fpn(x)
         class_predictions = [self.subnet_classes(p) for p in pyramid_features]
         bbox_predictions = [self.subnet_boxes(p) for p in pyramid_features]
+        print(class_predictions[0].size())
         return bbox_predictions, class_predictions
-
-
-retinanet = RetinaNet(resnet50_features(pretrained=True))
-a = Variable(torch.rand((1, 3, 864, 1536)))
-bbox_preds, class_preds = retinanet(a)
-for p in bbox_preds:
-    print(p.size())
-for p in class_preds:
-    print(p.size())

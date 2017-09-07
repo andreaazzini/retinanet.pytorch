@@ -13,6 +13,7 @@ import torchvision
 import torchvision.transforms as transforms
 
 from loss import FocalLoss
+# from models import RetinaNet, resnet50_features
 from retinanet import RetinaNet
 from datagen import ListDataset
 
@@ -20,7 +21,7 @@ from torch.autograd import Variable
 
 
 parser = argparse.ArgumentParser(description='PyTorch RetinaNet Training')
-parser.add_argument('--lr', default=0.01, type=float, help='learning rate')
+parser.add_argument('--lr', default=0.001, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 args = parser.parse_args()
 
@@ -37,18 +38,19 @@ transform = transforms.Compose([
 ])
 
 trainset = ListDataset(root='../../datasets/shelf/6/Images',
-                       list_file='../../datasets/shelf/train.txt', train=True, transform=transform, input_size=600, max_size=1000)
+                       list_file='../../datasets/shelf/train.txt', train=True, transform=transform, input_size=864, max_size=1536)
 #trainset = ListDataset(root='/datasets/pascal-voc/VOCdevkit/VOC2007/JPEGImages',
 #                       list_file='voc_data/voc07_train.txt', train=True, transform=transform, input_size=600, max_size=1000)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=6, shuffle=True, num_workers=8, collate_fn=trainset.collate_fn)
 
-testset = ListDataset(root='../../datasets/shelf/6/Images',
-                      list_file='../../datasets/shelf/train.txt', train=False, transform=transform, input_size=600, max_size=1000)
+#testset = ListDataset(root='../../datasets/shelf/6/Images',
+#                      list_file='../../datasets/shelf/train.txt', train=False, transform=transform, input_size=864, max_size=1536)
 #testset = ListDataset(root='/datasets/pascal-voc/VOCdevkit/VOC2007/JPEGImages',
 #                      list_file='voc_data/voc07_test.txt', train=False, transform=transform, input_size=600, max_size=1000)
-testloader = torch.utils.data.DataLoader(testset, batch_size=6, shuffle=False, num_workers=8, collate_fn=testset.collate_fn)
+#testloader = torch.utils.data.DataLoader(testset, batch_size=2, shuffle=False, num_workers=8, collate_fn=testset.collate_fn)
 
 # Model
+# net = RetinaNet(resnet50_features(pretrained=True))
 net = RetinaNet()
 if args.resume:
     print('==> Resuming from checkpoint..')
@@ -78,7 +80,6 @@ def train(epoch):
 
         optimizer.zero_grad()
         loc_preds, cls_preds = net(inputs)
-        print(cls_preds.size())
         loss = criterion(loc_preds, loc_targets, cls_preds, cls_targets)
         loss.backward()
         nn.utils.clip_grad_norm(net.parameters(), max_norm=1.2)
@@ -86,6 +87,7 @@ def train(epoch):
 
         train_loss += loss.data[0]
         print('train_loss: %.3f | avg_loss: %.3f' % (loss.data[0], train_loss/(batch_idx+1)))
+    save_checkpoint(train_loss, len(trainloader))
 
 # Test
 def test(epoch):
@@ -117,7 +119,22 @@ def test(epoch):
         torch.save(state, './checkpoint/ckpt.pth')
         best_loss = test_loss
 
+def save_checkpoint(loss, n):
+    global best_loss
+    loss /= n
+    if loss < best_loss:
+        print('Saving..')
+        state = {
+            'net': net.module.state_dict(),
+            'loss': loss,
+            'epoch': epoch,
+        }
+        if not os.path.isdir('checkpoint'):
+            os.mkdir('checkpoint')
+        torch.save(state, './checkpoint/ckpt.pth')
+        best_loss = loss
+
 
 for epoch in range(start_epoch, start_epoch+200):
     train(epoch)
-    test(epoch)
+    # test(epoch)

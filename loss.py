@@ -35,9 +35,9 @@ class FocalLoss(nn.Module):
           (tensor) focal loss.
         '''
         #print(y)
-        #y = one_hot(y.cpu(), x.size(-1)).cuda()
-        #logit = F.softmax(x)
-        logit = F.sigmoid(x)
+        y = one_hot(y.cpu(), x.size(-1)).cuda()
+        logit = F.softmax(x)
+        #logit = F.sigmoid(x)
         logit = logit.clamp(1e-7, 1. - 1e-7)
 
         loss = -1 * y.float() * torch.log(logit)
@@ -120,13 +120,13 @@ class FocalLoss(nn.Module):
         ################################################################
         # cls_loss = FocalLoss(loc_preds, loc_targets)
         ################################################################
-        # pos_neg = cls_targets > -1  # exclude ignored anchors
-        # mask = pos_neg.unsqueeze(2).expand_as(cls_preds)
-        mask = pos.unsqueeze(2).expand_as(cls_preds)
-        # masked_cls_preds = cls_preds[mask].view(-1,self.num_classes)
-        masked_cls_preds = cls_preds[mask].view(-1, self.num_classes-1)
-        # cls_loss = self.focal_loss(masked_cls_preds, cls_targets[pos_neg])
-        cls_loss = self.focal_loss(masked_cls_preds, cls_targets[pos])
+        pos_neg = cls_targets > -1  # exclude ignored anchors
+        mask = pos_neg.unsqueeze(2).expand_as(cls_preds)
+        # mask = pos.unsqueeze(2).expand_as(cls_preds)
+        masked_cls_preds = cls_preds[mask].view(-1,self.num_classes)
+        #masked_cls_preds = cls_preds[mask].view(-1, self.num_classes-1)
+        cls_loss = self.focal_loss(masked_cls_preds, cls_targets[pos_neg])
+        # cls_loss = self.focal_loss(masked_cls_preds, cls_targets[pos])
 
         print('loc_loss: %.3f | cls_loss: %.3f' % (loc_loss.data[0]/num_pos, cls_loss.data[0]/num_pos), end=' | ')
         loss = (loc_loss+cls_loss)/num_pos
