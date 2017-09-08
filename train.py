@@ -6,10 +6,8 @@ import torch.backends.cudnn as cudnn
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-# import torchvision.transforms as transforms
 from torch.autograd import Variable
 
-# from datagen import ListDataset
 import voc.transforms as transforms
 from encoder import DataEncoder
 from loss import FocalLoss
@@ -28,26 +26,16 @@ start_epoch = 0
 
 print('==> Preparing data..')
 transform = transforms.Compose([
-    transforms.Rescale((1536, 864)),
+    transforms.Scale((1536, 864)),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
     transforms.Normalize((0.3659,0.3790,0.3179), (0.2910,0.2930,0.2577))
-    # transforms.Normalize((0.485,0.456,0.406), (0.229,0.224,0.225))
+    # transforms.Normalize((0.485,0.456,0.406), (0.229,0.224,0.225)) # VOC (check)
 ])
 
-# trainset = ListDataset(root='../../datasets/shelf/6/Images',
-#                        list_file='../../datasets/shelf/train.txt', train=True, transform=transform, input_size=864, max_size=1536)
-#trainset = ListDataset(root='/datasets/pascal-voc/VOCdevkit/VOC2007/JPEGImages',
-#                       list_file='voc_data/voc07_train.txt', train=True, transform=transform, input_size=600, max_size=1000)
 root = os.path.join('data', 'shelf-6')
 trainset = VocLikeDataset(os.path.join(root, 'Images'), '.png', os.path.join(root, 'Annotations'), encoder=DataEncoder(), transform=transform)
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=6, shuffle=True, num_workers=8, collate_fn=trainset.collate_fn)
-
-#testset = ListDataset(root='../../datasets/shelf/6/Images',
-#                      list_file='../../datasets/shelf/train.txt', train=False, transform=transform, input_size=864, max_size=1536)
-#testset = ListDataset(root='/datasets/pascal-voc/VOCdevkit/VOC2007/JPEGImages',
-#                      list_file='voc_data/voc07_test.txt', train=False, transform=transform, input_size=600, max_size=1000)
-#testloader = torch.utils.data.DataLoader(testset, batch_size=2, shuffle=False, num_workers=8, collate_fn=testset.collate_fn)
 
 net = RetinaNet(resnet50_features(pretrained=True))
 if args.resume:

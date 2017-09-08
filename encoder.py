@@ -67,7 +67,7 @@ class DataEncoder:
 
     def decode(self, loc_preds, cls_preds, input_size):
         CLS_THRESH = 0.05
-        NMS_THRESH = 0.3
+        NMS_THRESH = 0.5
 
         if isinstance(input_size, int):
             input_size = torch.Tensor([input_size, input_size])
