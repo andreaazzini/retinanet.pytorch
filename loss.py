@@ -18,11 +18,9 @@ def one_hot(index, classes):
     return mask.scatter_(1, index, ones)
 
 class FocalLoss(nn.Module):
-    num_classes = 2
-    # num_classes = 21
-
-    def __init__(self):
+    def __init__(self, num_classes):
         super(FocalLoss, self).__init__()
+        self.num_classes = num_classes
 
     def focal_loss(self, x, y):
         '''Focal loss.
@@ -123,7 +121,7 @@ class FocalLoss(nn.Module):
         pos_neg = cls_targets > -1  # exclude ignored anchors
         mask = pos_neg.unsqueeze(2).expand_as(cls_preds)
         # mask = pos.unsqueeze(2).expand_as(cls_preds)
-        masked_cls_preds = cls_preds[mask].view(-1,self.num_classes)
+        masked_cls_preds = cls_preds[mask].view(-1, self.num_classes + 1)
         #masked_cls_preds = cls_preds[mask].view(-1, self.num_classes-1)
         cls_loss = self.focal_loss(masked_cls_preds, cls_targets[pos_neg])
         # cls_loss = self.focal_loss(masked_cls_preds, cls_targets[pos])

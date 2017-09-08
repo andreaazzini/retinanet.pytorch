@@ -67,7 +67,7 @@ class DataEncoder:
 
     def decode(self, loc_preds, cls_preds, input_size):
         CLS_THRESH = 0.05
-        NMS_THRESH = 0.5
+        NMS_THRESH = 0.3
 
         if isinstance(input_size, int):
             input_size = torch.Tensor([input_size, input_size])
@@ -79,12 +79,11 @@ class DataEncoder:
         loc_wh = loc_preds[:, 2:]
         xy = loc_xy * anchor_boxes[:, 2:] + anchor_boxes[:, :2]
         wh = loc_wh.exp() * anchor_boxes[:, 2:]
-        # boxes = torch.cat([xy - wh / 2, xy + wh / 2], 1)  # [#anchors,4]
-        boxes = torch.cat([xy, wh], 1)  # [#anchors,4]
+        boxes = torch.cat([xy, wh], 1)
         boxes = change_box_order(boxes, 'xywh2xyxy')
 
-        score, labels = cls_preds.max(1)          # [#anchors,]
+        score, labels = cls_preds.max(1)
         ids = (score > CLS_THRESH) & (labels > 0)
-        ids = ids.nonzero().squeeze()             # [#obj,]
+        ids = ids.nonzero().squeeze()
         keep = box_nms(boxes[ids], score[ids], threshold=NMS_THRESH)
         return boxes[ids][keep], labels[ids][keep]

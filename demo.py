@@ -1,5 +1,7 @@
+import argparse
 import numpy as np
 import os
+import sys
 from PIL import Image, ImageDraw
 from tqdm import tqdm
 
@@ -9,41 +11,39 @@ import torchvision.transforms as transforms
 from torch.autograd import Variable
 
 from encoder import DataEncoder
-from retinanet import RetinaNet, resnet50_features
+from retinanet import RetinaNet
 from voc.transforms import Unnormalize
 
 
-transform = transforms.Compose([
-    # transforms.Scale((1536, 864)),
-    # transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize((0.3659, 0.3790, 0.3179), (0.2910, 0.2930, 0.2577))
-])
+parser = argparse.ArgumentParser(description='PyTorch RetinaNet Training')
+parser.add_argument('--exp', required=True, help='experiment name')
+args = parser.parse_args()
+
+sys.path.insert(0, os.path.join('exps', args.exp))
+import config as cfg
+
+
+transform_list = [transforms.ToTensor(), transforms.Normalize(cfg.mean, cfg.std)]
+if cfg.scale is not None:
+    transform_list.insert(0, transforms.Scale(cfg.scale))
+transform = transforms.Compose(train_transform_list)
 
 inverse_transform = transforms.Compose([
-    Unnormalize((0.3659, 0.3790, 0.3179), (0.2910, 0.2930, 0.2577)),
+    Unnormalize(cfg.mean, cfg.std),
     transforms.ToPILImage()
 ])
 
-
 data_encoder = DataEncoder()
-net = RetinaNet(resnet50_features())
-checkpoint = torch.load('checkpoint/ckpt.pth')
+net = RetinaNet(backbone=cfg.backbone, num_classes=len(cfg.classes))
+checkpoint = torch.load(os.path.join('ckpts', args.exp, 'ckpt.pth'))
 net.load_state_dict(checkpoint['net'])
 net.cuda()
 net.eval()
 
-image_fn_1 = 'session5_left_35.png'
-image_fn_2 = 'session4_right_23.png'
-image_fn_3 = 'session1_right_26.png'
-image_dir = os.path.join('/', 'home', 'azzarcher', 'datasets', 'shelf', '6', 'Images')
-# for image_fn in tqdm(os.listdir(image_dir)):
-for image_fn in tqdm([image_fn_1, image_fn_2, image_fn_3]):
-    frame = Image.open(os.path.join(image_dir, image_fn))
-    frame.thumbnail((1536, 864), Image.ANTIALIAS)
-    
-    width, height = frame.size
+for image_fn in tqdm(os.listdir(cfg.image_dir)):
+    frame = Image.open(os.path.join(cfg.image_dir, image_fn))
     frame = transform(frame).cuda()
+    height, width = frame.size()[1:]
     
     frame = Variable(frame.unsqueeze(0))
     loc_preds, cls_preds = net(frame)
@@ -59,8 +59,9 @@ for image_fn in tqdm([image_fn_1, image_fn_2, image_fn_3]):
         continue
     
     frame = inverse_transform(frame.data.cpu().squeeze())
-    for box in boxes:
+    for i, box in enumerate(boxes):
         box = tuple(map(lambda c: int(c), box))
         draw = ImageDraw.Draw(frame)
         draw.rectangle([box[0], box[1], box[2], box[3]])
+        draw.text((box[0] + 10, box[1] + 10), cfg.classes[labels[i] - 1])
     frame.save(os.path.join('demo', image_fn))
