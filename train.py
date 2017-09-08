@@ -81,8 +81,6 @@ def train(epoch):
 
         train_loss += loss.data[0]
         print('train_loss: %.3f | avg_loss: %.3f' % (loss.data[0], train_loss/(batch_idx+1)))
-    if epoch % cfg.eval_every == 0:
-        save_checkpoint(train_loss, len(trainloader))
 
 def val(epoch):
     net.eval()
@@ -116,5 +114,5 @@ def save_checkpoint(loss, n):
 
 for epoch in range(start_epoch + 1, start_epoch + cfg.num_epochs + 1):
     train(epoch)
-    #if epoch % cfg.eval_every == 0:
-    #    val(epoch)
+    if epoch % cfg.eval_every == 0:
+        val(epoch)
