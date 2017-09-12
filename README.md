@@ -12,7 +12,7 @@ This implementation features experiment-based training. You can setup your own e
 python train.py --exp exp_subdirectory_name
 ```
 
-## Pascal VOC
+### Pascal VOC
 
 I have prepared an experiment on Pascal VOC 2012. Make sure you softlink the Pascal VOC 2012 directory (i.e. the one containing `Annotations`, `JPEGImages` and `ImageSets`) inside your data directory before training.
 
