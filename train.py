@@ -27,6 +27,7 @@ import config as cfg
 assert torch.cuda.is_available(), 'Error: CUDA not found!'
 best_loss = float('inf')
 start_epoch = 0
+lr = cfg.lr
 
 print('Preparing data..')
 train_transform_list = [transforms.RandomHorizontalFlip(), transforms.ToTensor(), transforms.Normalize(cfg.mean, cfg.std)]
@@ -55,13 +56,14 @@ if args.resume:
     net.load_state_dict(checkpoint['net'])
     best_loss = checkpoint['loss']
     start_epoch = checkpoint['epoch']
+    lr = checkpoint['lr']
 
 net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count()))
 net.cuda()
 cudnn.benchmark = True
 
 criterion = FocalLoss(len(cfg.classes))
-optimizer = optim.SGD(net.parameters(), lr=cfg.lr, momentum=cfg.momentum, weight_decay=cfg.weight_decay)
+optimizer = optim.SGD(net.parameters(), lr=lr, momentum=cfg.momentum, weight_decay=cfg.weight_decay)
 
 def train(epoch):
     print('\nTrain Epoch: %d' % epoch)
@@ -81,6 +83,7 @@ def train(epoch):
 
         train_loss += loss.data[0]
         print('train_loss: %.3f | avg_loss: %.3f' % (loss.data[0], train_loss/(batch_idx+1)))
+    save_checkpoint(train_loss, len(trainloader))
 
 def val(epoch):
     net.eval()
@@ -105,6 +108,7 @@ def save_checkpoint(loss, n):
             'net': net.module.state_dict(),
             'loss': loss,
             'epoch': epoch,
+            'lr': lr
         }
         ckpt_path = os.path.join('ckpts', args.exp)
         if not os.path.isdir(ckpt_path):
@@ -113,6 +117,11 @@ def save_checkpoint(loss, n):
         best_loss = loss
 
 for epoch in range(start_epoch + 1, start_epoch + cfg.num_epochs + 1):
+    if epoch in cfg.lr_decay_epochs:
+        lr *= 0.1
+        for param_group in optimizer.param_groups:
+            param_group['lr'] = lr
     train(epoch)
-    if epoch % cfg.eval_every == 0:
+
+    if cfg.eval_while_training and epoch % cfg.eval_every == 0:
         val(epoch)

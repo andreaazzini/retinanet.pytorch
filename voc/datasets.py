@@ -9,7 +9,7 @@ from voc.annotations import AnnotationDir
 
 
 class VocLikeDataset(Dataset):
-    def __init__(self, image_dir, annotation_dir, imageset_fn, image_ext, classes, encoder, transform=None):
+    def __init__(self, image_dir, annotation_dir, imageset_fn, image_ext, classes, encoder, transform=None, val=False):
         self.image_dir_path = image_dir
         self.image_ext = image_ext
         with open(imageset_fn) as f:
@@ -18,6 +18,7 @@ class VocLikeDataset(Dataset):
         self.filenames = list(self.annotation_dir.ann_dict.keys())
         self.encoder = encoder
         self.transform = transform
+        self.val = val
 
     def __getitem__(self, index):
         fn = self.filenames[index]
@@ -37,6 +38,7 @@ class VocLikeDataset(Dataset):
         imgs = [example['image'] for example in batch]
         boxes  = [example['boxes'] for example in batch]
         labels = [example['labels'] for example in batch]
+        img_sizes = [img.size()[1:] for img in imgs]
 
         max_h = max([im.size(1) for im in imgs])
         max_w = max([im.size(2) for im in imgs])
@@ -53,4 +55,6 @@ class VocLikeDataset(Dataset):
             loc_target, cls_target = self.encoder.encode(boxes[i], labels[i], input_size=(max_w, max_h))
             loc_targets.append(loc_target)
             cls_targets.append(cls_target)
-        return inputs, torch.stack(loc_targets), torch.stack(cls_targets)
+        if not self.val:
+            return inputs, torch.stack(loc_targets), torch.stack(cls_targets)
+        return inputs, img_sizes, torch.stack(loc_targets), torch.stack(cls_targets)

@@ -13,10 +13,13 @@ classes = ['aeroplane', 'bicycle', 'bird', 'boat', 'bottle', 'bus', 'car', 'cat'
 mean, std = (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
 scale = None
 
-batch_size = 16
+batch_size = 8
 lr = 0.01
 momentum = 0.9
 weight_decay = 1e-4
-num_epochs = 90000
+num_epochs = 124
+lr_decay_epochs = [83, 110]
 num_workers = 8
+
+eval_while_training = False
 eval_every = 10
