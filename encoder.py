@@ -6,7 +6,7 @@ from utils import box_iou, box_nms, change_box_order, meshgrid
 class DataEncoder:
     def __init__(self):
         self.anchor_areas = [512*512, 256*256, 128*128, 64*64, 32*32]
-        self.aspect_ratios = [1/2, 1, 2/1]
+        self.aspect_ratios = [1/5, 1, 5/1]
         self.scale_ratios = [1, pow(2, 1/3), pow(2, 2/3)]
         self.num_levels = len(self.anchor_areas)
         self.num_anchors = len(self.aspect_ratios) * len(self.scale_ratios)
